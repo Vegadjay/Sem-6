@@ -1,0 +1,15 @@
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/bin/Debug/net8.0/Lab-4
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/bin/Debug/net8.0/Lab-4.deps.json
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/bin/Debug/net8.0/Lab-4.runtimeconfig.json
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/bin/Debug/net8.0/Lab-4.dll
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/bin/Debug/net8.0/Lab-4.pdb
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/obj/Debug/net8.0/Lab-4.GeneratedMSBuildEditorConfig.editorconfig
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/obj/Debug/net8.0/Lab-4.AssemblyInfoInputs.cache
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/obj/Debug/net8.0/Lab-4.AssemblyInfo.cs
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/obj/Debug/net8.0/Lab-4.csproj.CoreCompileInputs.cache
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/obj/Debug/net8.0/Lab-4.sourcelink.json
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/obj/Debug/net8.0/Lab-4.dll
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/obj/Debug/net8.0/refint/Lab-4.dll
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/obj/Debug/net8.0/Lab-4.pdb
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/obj/Debug/net8.0/Lab-4.genruntimeconfig.cache
+/home/jay-vegad/Desktop/coding/sem-6/dotnet/Lab-4/obj/Debug/net8.0/ref/Lab-4.dll

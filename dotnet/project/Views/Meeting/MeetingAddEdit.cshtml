@@ -1,0 +1,75 @@
+@model MOM.Models.MeetingAttendanceViewModel
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Add/Edit Meeting Attendance</h5>
+                    <form asp-action="SaveMeetingAttendance" method="post">
+                        <div class="row mb-3">
+                            <label asp-for="MemberID" class="col-sm-3 col-form-label"></label>
+                            <div class="col-sm-9">
+                                <input asp-for="MemberID" class="form-control" type="number" required />
+                                <span asp-validation-for="MemberID" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label asp-for="MeetingID" class="col-sm-3 col-form-label"></label>
+                            <div class="col-sm-9">
+                                <input asp-for="MeetingID" class="form-control" type="number" required />
+                                <span asp-validation-for="MeetingID" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label asp-for="StaffID" class="col-sm-3 col-form-label"></label>
+                            <div class="col-sm-9">
+                                <input asp-for="StaffID" class="form-control" type="number" required />
+                                <span asp-validation-for="StaffID" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label asp-for="Attendance" class="col-sm-3 col-form-label"></label>
+                            <div class="col-sm-9">
+                                <select asp-for="Attendance" class="form-control" required>
+                                    <option value="">--Select--</option>
+                                    <option value="P">Present</option>
+                                    <option value="A">Absent</option>
+                                    <option value="E">Excused</option>
+                                </select>
+                                <span asp-validation-for="Attendance" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label asp-for="Remarks" class="col-sm-3 col-form-label"></label>
+                            <div class="col-sm-9">
+                                <input asp-for="Remarks" class="form-control" maxlength="250" />
+                                <span asp-validation-for="Remarks" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label asp-for="Created" class="col-sm-3 col-form-label"></label>
+                            <div class="col-sm-9">
+                                <input asp-for="Created" class="form-control" type="date" required />
+                                <span asp-validation-for="Created" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label asp-for="Modified" class="col-sm-3 col-form-label"></label>
+                            <div class="col-sm-9">
+                                <input asp-for="Modified" class="form-control" type="date" />
+                                <span asp-validation-for="Modified" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-9 offset-sm-3">
+                                <button type="submit" class="btn btn-primary">Save</button>
+                                <a asp-action="Index" asp-controller="Meeting" class="btn btn-secondary">Cancel</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

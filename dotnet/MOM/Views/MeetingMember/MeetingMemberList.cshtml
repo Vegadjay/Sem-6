@@ -1,0 +1,103 @@
+@model IEnumerable<MOM.Models.MeetingMemberModel>
+@{
+    ViewData["Title"] = "Meeting Member List";
+}
+
+<div class="pagetitle">
+    <h1>Meeting Members</h1>
+    <p class="text-muted">Manage meeting attendees and attendance</p>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item">Meeting Members</li>
+            <li class="breadcrumb-item active">List</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-people me-2 text-primary"></i> Meeting Members
+                    </h5>
+                    <a asp-action="MeetingMemberAddEdit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Add Member
+                    </a>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover datatable align-middle mb-0">
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    var groupedMembers = Model.GroupBy(m => m.MeetingID);
+                                    foreach (var group in groupedMembers)
+                                    {
+                                        var firstMember = group.First();
+                                        var meetingDate = firstMember.Meeting?.MeetingDate.ToString("MMMM dd, yyyy") ?? "Unknown Date";
+                                        var meetingType = firstMember.Meeting?.MeetingType?.MeetingTypeName ?? "General";
+                                        
+                                        <tr class="table-light">
+                                            <td colspan="5" class="py-3">
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <span class="badge bg-primary me-2">@meetingType</span>
+                                                        <span class="fw-bold">@meetingDate</span>
+                                                        <span class="text-muted ms-2 small">(@group.Count() attendees)</span>
+                                                    </div>
+                                                    <a asp-controller="Meeting" asp-action="Attandance" asp-route-id="@group.Key" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-clipboard-check me-1"></i> Manage Attendance
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                        foreach (var item in group)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="fw-semibold">@(item.Staff?.Name ?? "—")</div>
+                                                </td>
+                                                <td>
+                                                    @if (item.IsPresent)
+                                                    { <span class="badge bg-success-light text-success fw-normal">Present</span> }
+                                                    else
+                                                    { <span class="badge bg-danger-light text-danger fw-normal">Absent</span> }
+                                                </td>
+                                                <td>@(item.Remarks ?? "—")</td>
+                                                <td class="text-end">
+                                                    <div class="btn-group">
+                                                        <a asp-action="MeetingMemberAddEdit" asp-route-id="@item.MeetingMemberID" class="btn btn-outline-secondary btn-sm" title="Edit">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                        <a asp-action="Delete" asp-route-id="@item.MeetingMemberID" class="btn btn-outline-danger btn-sm" title="Delete" onclick="return confirm('Are you sure you want to delete this member?');">
+                                                            <i class="bi bi-trash"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="table-empty-state py-5">
+                                            <div class="text-center">
+                                                <i class="bi bi-people text-muted fs-1 mb-3"></i>
+                                                <p class="mb-0">No meeting members found. Mark attendance to see them here.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

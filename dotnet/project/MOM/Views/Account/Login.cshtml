@@ -1,0 +1,99 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Login";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - MOM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="~/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="~/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root { --mom-primary: #4361ee; --mom-primary-dark: #3550c7; }
+        body { font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 45%, #4361ee 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+        .login-card { border: none; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; background: #fff; }
+        .login-card .card-body { padding: 2.5rem; }
+        .login-logo { font-weight: 700; font-size: 1.75rem; color: var(--mom-primary); text-decoration: none; }
+        .login-logo img { max-height: 42px; margin-right: 0.5rem; }
+        .form-control { border-radius: 12px; padding: 0.7rem 1rem; border: 1px solid #e2e8f0; }
+        .form-control:focus { border-color: var(--mom-primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.15); }
+        .input-group-text { border-radius: 12px 0 0 12px; background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; }
+        .btn-login { background: var(--mom-primary); border: none; border-radius: 12px; padding: 0.75rem; font-weight: 600; transition: all 0.2s; }
+        .btn-login:hover { background: var(--mom-primary-dark); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(67,97,238,0.4); color: #fff; }
+        .form-check-input:checked { background-color: var(--mom-primary); border-color: var(--mom-primary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <section class="section register min-vh-100 d-flex flex-column align-items-center justify-content-center py-4">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="d-flex justify-content-center py-4 mb-3">
+                            <a asp-controller="Home" asp-action="Index" class="login-logo d-flex align-items-center text-decoration-none">
+                                <img src="~/assets/img/logo.png" alt="MOM">
+                                <span>MOM</span>
+                            </a>
+                        </div>
+
+                        <div class="card login-card">
+                            <div class="card-body">
+                                <div class="pt-2 pb-3 text-center">
+                                    <h5 class="card-title fw-bold fs-4 mb-1">Welcome back</h5>
+                                    <p class="text-muted small mb-0">Sign in to your account to continue</p>
+                                </div>
+
+                                <form class="row g-3 needs-validation" asp-controller="Account" asp-action="Login" method="post" novalidate>
+                                    <div class="col-12">
+                                        <label for="yourUsername" class="form-label fw-500">Username</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                            <input type="text" name="username" class="form-control" id="yourUsername" placeholder="Enter username" required>
+                                            <div class="invalid-feedback">Please enter your username.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="yourPassword" class="form-label fw-500">Password</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                            <input type="password" name="password" class="form-control" id="yourPassword" placeholder="Enter password" required>
+                                            <div class="invalid-feedback">Please enter your password.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="remember" value="true" id="rememberMe">
+                                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <button class="btn btn-primary btn-login w-100" type="submit">
+                                            <i class="bi bi-box-arrow-in-right me-2"></i> Sign in
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="~/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.querySelectorAll('.needs-validation').forEach(form => {
+            form.addEventListener('submit', e => {
+                if (!form.checkValidity()) { e.preventDefault(); e.stopPropagation(); }
+                form.classList.add('was-validated');
+            });
+        });
+    </script>
+</body>
+</html>

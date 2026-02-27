@@ -1,0 +1,62 @@
+@model MOM.Models.DepartmentModel
+@{
+    ViewData["Title"] = Model.DepartmentID == 0 ? "Add Department" : "Edit Department";
+}
+
+<div class="pagetitle">
+    <h1>@(Model.DepartmentID == 0 ? "Add" : "Edit") Department</h1>
+    <p class="text-muted mb-0">@(Model.DepartmentID == 0 ? "Create a new department" : "Update department details")</p>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Department" asp-action="DepartmentList">Department</a></li>
+            <li class="breadcrumb-item active">@(Model.DepartmentID == 0 ? "Add" : "Edit")</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-building me-2 text-primary"></i>
+                        @(Model.DepartmentID == 0 ? "New Department" : "Edit Department")
+                    </h5>
+                </div>
+                <div class="card-body pt-0">
+                    <form asp-action="Save" method="post" class="row g-3">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="DepartmentID" />
+                        <input type="hidden" asp-for="Created" />
+                        <input type="hidden" asp-for="Modified" />
+
+                        <div class="col-12">
+                            <label asp-for="DepartmentName" class="form-label">Department Name</label>
+                            <input asp-for="DepartmentName" class="form-control" placeholder="Enter department name" />
+                            <span asp-validation-for="DepartmentName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Description" class="form-label">Description</label>
+                            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter description"></textarea>
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 d-flex gap-2 justify-content-end pt-2 border-top mt-3">
+                            <a asp-action="DepartmentList" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="reset" class="btn btn-secondary">Reset</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Save
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

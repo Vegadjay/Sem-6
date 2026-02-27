@@ -1,0 +1,67 @@
+is_global = true
+build_property.TargetFramework = net10.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = MOM
+build_property.RootNamespace = MOM
+build_property.ProjectDir = /home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = /home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM
+build_property._RazorSourceGeneratorDebug = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/Department/DepartmentList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvRGVwYXJ0bWVudC9EZXBhcnRtZW50TGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/Home/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSG9tZS9JbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/Meeting/MeetingLIst.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTWVldGluZy9NZWV0aW5nTElzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/MeetingMember/MeetingMemberList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTWVldGluZ01lbWJlci9NZWV0aW5nTWVtYmVyTGlzdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/MeetingType/MeetingTypeList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTWVldGluZ1R5cGUvTWVldGluZ1R5cGVMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/MeetingVenue/MeetingVenueList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTWVldGluZ1ZlbnVlL01lZXRpbmdWZW51ZUxpc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/Shared/Error.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL0Vycm9yLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/Shared/_ValidationScriptsPartial.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/Staff/StaffList.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU3RhZmYvU3RhZmZMaXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvX1ZpZXdJbXBvcnRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvX1ZpZXdTdGFydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/jay-vegad/Downloads/final-manage-dotnet/MOM/MOM/Views/Shared/_Layout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19MYXlvdXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = b-ax6z2mbjri

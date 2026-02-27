@@ -1,0 +1,74 @@
+@model IEnumerable<MOM.Models.MeetingTypeModel>
+@{
+    ViewData["Title"] = "Meeting Type List";
+}
+
+<div class="pagetitle">
+    <h1>Meeting Types</h1>
+    <p class="text-muted">Manage meeting type categories</p>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item">Meeting Type</li>
+            <li class="breadcrumb-item active">List</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-calendar-event me-2 text-primary"></i> Meeting Types
+                    </h5>
+                    <a asp-action="MeetingTypeAddEdit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Add Meeting Type
+                    </a>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover datatable align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Remarks</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    foreach (var item in Model)
+                                    {
+                                        <tr>
+                                            <td><span class="fw-medium">@item.MeetingTypeId</span></td>
+                                            <td>@item.MeetingTypeName</td>
+                                            <td>@(item.Remarks ?? "—")</td>
+                                            <td class="text-end">
+                                                <a asp-action="MeetingTypeAddEdit" asp-route-id="@item.MeetingTypeId" class="btn btn-outline-primary btn-sm" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a asp-action="Delete" asp-route-id="@item.MeetingTypeId" class="btn btn-outline-danger btn-sm" title="Delete" onclick="return confirm('Are you sure you want to delete this meeting type?');">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="table-empty-state">No meeting types found. Add your first type above.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

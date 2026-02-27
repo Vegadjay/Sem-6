@@ -1,0 +1,79 @@
+@model MOM.Models.MeetingStaffModel
+@{
+    ViewData["Title"] = Model.StaffID == 0 ? "Add Staff" : "Edit Staff";
+}
+
+<div class="pagetitle">
+    <h1>@(Model.StaffID == 0 ? "Add" : "Edit") Staff</h1>
+    <p class="text-muted mb-0">@(Model.StaffID == 0 ? "Add a new staff member" : "Update staff details")</p>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Staff" asp-action="StaffList">Staff</a></li>
+            <li class="breadcrumb-item active">@(Model.StaffID == 0 ? "Add" : "Edit")</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-person-badge me-2 text-primary"></i>
+                        @(Model.StaffID == 0 ? "New Staff Member" : "Edit Staff Member")
+                    </h5>
+                </div>
+                <div class="card-body pt-0">
+                    <form asp-action="Save" method="post" class="row g-3">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="StaffID" />
+                        <input type="hidden" asp-for="Created" />
+                        <input type="hidden" asp-for="Modified" />
+
+                        <div class="col-md-6">
+                            <label asp-for="Name" class="form-label">Name</label>
+                            <input asp-for="Name" class="form-control" placeholder="Full name" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DepartmentID" class="form-label">Department</label>
+                            <select asp-for="DepartmentID" class="form-select" asp-items="@(new SelectList(ViewBag.Departments, "DepartmentID", "DepartmentName"))">
+                                <option value="">Select Department</option>
+                            </select>
+                            <span asp-validation-for="DepartmentID" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label">Email</label>
+                            <input asp-for="Email" class="form-control" type="email" placeholder="email@example.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Mobile" class="form-label">Mobile</label>
+                            <input asp-for="Mobile" class="form-control" placeholder="Phone number" />
+                            <span asp-validation-for="Mobile" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Remarks" class="form-label">Remarks</label>
+                            <textarea asp-for="Remarks" class="form-control" rows="2" placeholder="Optional remarks"></textarea>
+                            <span asp-validation-for="Remarks" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 d-flex gap-2 justify-content-end pt-2 border-top mt-3">
+                            <a asp-action="StaffList" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="reset" class="btn btn-secondary">Reset</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Save
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

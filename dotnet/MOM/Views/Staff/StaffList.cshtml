@@ -1,0 +1,79 @@
+@model IEnumerable<MOM.Models.MeetingStaffModel>
+@using MOM.Data
+@{
+    ViewData["Title"] = "Staff List";
+}
+
+<div class="pagetitle">
+    <h1>Staff</h1>
+    <p class="text-muted">Manage staff members</p>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item">Staff</li>
+            <li class="breadcrumb-item active">List</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-person-badge me-2 text-primary"></i> Staff
+                    </h5>
+                    <a asp-action="StaffAddEdit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Add Staff
+                    </a>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover datatable align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Department</th>
+                                    <th>Email</th>
+                                    <th>Mobile</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    foreach (var item in Model)
+                                    {
+                                        <tr>
+                                            <td><span class="fw-medium">@item.StaffID</span></td>
+                                            <td>@item.Name</td>
+                                            <td>@(item.Department?.DepartmentName ?? "Unknown")</td>
+                                            <td>@item.Email</td>
+                                            <td>@(item.Mobile ?? "—")</td>
+                                            <td class="text-end">
+                                                <a asp-action="StaffAddEdit" asp-route-id="@item.StaffID" class="btn btn-outline-primary btn-sm" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a asp-action="Delete" asp-route-id="@item.StaffID" class="btn btn-outline-danger btn-sm" title="Delete" onclick="return confirm('Are you sure you want to delete this staff member?');">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="table-empty-state">No staff found. Add your first staff member above.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

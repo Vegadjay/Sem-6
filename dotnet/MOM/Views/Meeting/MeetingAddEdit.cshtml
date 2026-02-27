@@ -1,0 +1,84 @@
+@model MOM.Models.MeetingsModel
+@{
+    ViewData["Title"] = Model.MeetingId == 0 ? "Add Meeting" : "Edit Meeting";
+}
+
+<div class="pagetitle">
+    <h1>@(Model.MeetingId == 0 ? "Add" : "Edit") Meeting</h1>
+    <p class="text-muted mb-0">@(Model.MeetingId == 0 ? "Schedule a new meeting" : "Update meeting details")</p>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Meeting" asp-action="MeetingList">Meetings</a></li>
+            <li class="breadcrumb-item active">@(Model.MeetingId == 0 ? "Add" : "Edit")</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-calendar-week me-2 text-primary"></i>
+                        @(Model.MeetingId == 0 ? "New Meeting" : "Edit Meeting")
+                    </h5>
+                </div>
+                <div class="card-body pt-0">
+                    <form asp-action="Save" method="post" class="row g-3">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="MeetingId" />
+                        <input type="hidden" asp-for="Created" />
+                        <input type="hidden" asp-for="Modified" />
+
+                        <div class="col-md-6">
+                            <label asp-for="MeetingTypeId" class="form-label">Meeting Type</label>
+                            <select asp-for="MeetingTypeId" class="form-select" asp-items="@(new SelectList(ViewBag.MeetingTypes, "MeetingTypeId", "MeetingTypeName"))">
+                                <option value="">Select Meeting Type</option>
+                            </select>
+                            <span asp-validation-for="MeetingTypeId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="MeetingVenueId" class="form-label">Venue</label>
+                            <select asp-for="MeetingVenueId" class="form-select" asp-items="@(new SelectList(ViewBag.Venues, "MeetingVenueID", "MeetingVenueName"))">
+                                <option value="">Select Venue</option>
+                            </select>
+                            <span asp-validation-for="MeetingVenueId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DepartmentId" class="form-label">Department (Optional)</label>
+                            <select asp-for="DepartmentId" class="form-select" asp-items="@(new SelectList(ViewBag.Departments, "DepartmentID", "DepartmentName"))">
+                                <option value="">Select Department</option>
+                            </select>
+                            <span asp-validation-for="DepartmentId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="MeetingDate" class="form-label">Date & Time</label>
+                            <input asp-for="MeetingDate" class="form-control" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" />
+                            <span asp-validation-for="MeetingDate" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="MeetingDescription" class="form-label">Description</label>
+                            <textarea asp-for="MeetingDescription" class="form-control" rows="4" placeholder="Meeting agenda or notes"></textarea>
+                            <span asp-validation-for="MeetingDescription" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 d-flex gap-2 justify-content-end pt-2 border-top mt-3">
+                            <a asp-action="MeetingList" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="reset" class="btn btn-secondary">Reset</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Save
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

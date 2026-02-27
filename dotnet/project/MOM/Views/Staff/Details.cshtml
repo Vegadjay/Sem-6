@@ -1,0 +1,131 @@
+@model MOM.Models.StaffModel
+@{
+    ViewData["Title"] = "Staff Details";
+    var meetings = ViewBag.StaffMeetings as IEnumerable<MOM.Models.MeetingMemberModel> ?? new List<MOM.Models.MeetingMemberModel>();
+}
+
+<div class="pagetitle">
+    <h1>Staff Profile</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Staff" asp-action="Index">Staff</a></li>
+            <li class="breadcrumb-item active">Profile</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section profile">
+    <div class="row">
+        <div class="col-xl-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
+                    <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 120px; height: 120px; border: 4px solid #fff;">
+                        <i class="bi bi-person-badge fs-1 text-primary"></i>
+                    </div>
+                    <h2 class="fw-bold mb-1">@Model.StaffName</h2>
+                    <span class="badge bg-primary-light text-primary mb-3 px-3 py-2 rounded-pill">@Model.Department?.DepartmentName</span>
+                    
+                    <div class="d-flex gap-2 mt-2">
+                        <a href="mailto:@Model.EmailAddress" class="btn btn-outline-primary rounded-pill btn-sm px-4"><i class="bi bi-envelope me-1"></i> Email</a>
+                        <a href="tel:@Model.MobileNo" class="btn btn-primary rounded-pill btn-sm px-4 shadow-sm"><i class="bi bi-telephone me-1"></i> Call</a>
+                    </div>
+                </div>
+                <hr class="mx-4 my-2 opacity-10">
+                <div class="card-body pt-2 px-4 pb-4">
+                    <h5 class="card-title fs-6 text-uppercase text-muted fw-bold mb-3">Contact Details</h5>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="rounded-3 bg-light p-2 me-3">
+                            <i class="bi bi-envelope text-primary"></i>
+                        </div>
+                        <div>
+                            <div class="small text-muted">Email Address</div>
+                            <div class="fw-medium">@Model.EmailAddress</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-0">
+                        <div class="rounded-3 bg-light p-2 me-3">
+                            <i class="bi bi-phone text-success"></i>
+                        </div>
+                        <div>
+                            <div class="small text-muted">Mobile Number</div>
+                            <div class="fw-medium">@(string.IsNullOrEmpty(Model.MobileNo) ? "Not provided" : Model.MobileNo)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-calendar-check me-2 text-primary"></i> Meeting Participation
+                    </h5>
+                    <span class="badge bg-light text-dark fw-normal border">Total: @meetings.Count()</span>
+                </div>
+                <div class="card-body px-0">
+                    @if (meetings.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light bg-opacity-50">
+                                    <tr>
+                                        <th class="ps-4">Meeting Date</th>
+                                        <th>Type</th>
+                                        <th>Venue</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-end pe-4">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var mm in meetings)
+                                    {
+                                        <tr>
+                                            <td class="ps-4">
+                                                <div class="fw-medium">@mm.Meeting?.MeetingDate?.ToString("MMM dd, yyyy")</div>
+                                                <div class="small text-muted">@mm.Meeting?.MeetingDate?.ToString("HH:mm")</div>
+                                            </td>
+                                            <td>@mm.Meeting?.MeetingType?.MeetingTypeName</td>
+                                            <td><span class="text-truncate d-inline-block" style="max-width: 150px;">@mm.Meeting?.MeetingVenue?.MeetingVenueName</span></td>
+                                            <td class="text-center">
+                                                @if (mm.IsPresent)
+                                                {
+                                                    <span class="badge rounded-pill bg-success-light text-success border border-success-subtle px-3">Present</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge rounded-pill bg-danger-light text-danger border border-danger-subtle px-3">Absent</span>
+                                                }
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <a asp-controller="Meetings" asp-action="Details" asp-route-id="@mm.MeetingID" class="btn btn-light btn-sm rounded-circle shadow-sm" title="View Meeting">
+                                                    <i class="bi bi-arrow-right"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                <i class="bi bi-calendar-x text-muted fs-1"></i>
+                            </div>
+                            <h6 class="fw-bold">No Attendance Records</h6>
+                            <p class="text-muted small mx-auto" style="max-width: 250px;">This staff member hasn't been recorded in any meetings yet.</p>
+                        </div>
+                    }
+                </div>
+                <div class="card-footer bg-light bg-opacity-50 border-0 p-4 mt-auto">
+                    <a asp-action="Index" class="btn btn-outline-secondary rounded-pill btn-sm px-4">
+                        <i class="bi bi-arrow-left me-1"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

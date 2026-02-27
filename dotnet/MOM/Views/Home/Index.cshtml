@@ -1,0 +1,161 @@
+<div class="pagetitle">
+    <h1>Dashboard</h1>
+    <p class="text-muted mb-0">Meeting management overview and analytics</p>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item active">Dashboard</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="alert alert-success alert-dismissible fade show d-flex align-items-center rounded-3 shadow-sm" role="alert">
+    <i class="bi bi-check-circle-fill me-2 fs-5 text-success"></i>
+    <span>Welcome back, <strong>Jay Vegad</strong></span>
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<div class="d-flex justify-content-end mb-4 gap-2 flex-wrap">
+    <button type="button" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+    </button>
+    <button type="button" class="btn btn-success btn-sm">
+        <i class="bi bi-download me-1"></i> Export Report
+    </button>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card info-card revenue-card h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <h6 class="text-muted text-uppercase small fw-600 mb-1">Total Meetings</h6>
+                    <h3 class="mb-0 fw-bold">@ViewBag.TotalMeetings</h3>
+                    <span class="text-success small"><i class="bi bi-arrow-up me-1"></i> 12% from last month</span>
+                </div>
+                <div class="rounded-3 bg-success bg-opacity-10 p-3">
+                    <i class="bi bi-calendar-week text-success fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card info-card customers-card h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <h6 class="text-muted text-uppercase small fw-600 mb-1">Upcoming</h6>
+                    <h3 class="mb-0 fw-bold">@ViewBag.UpcomingMeetings</h3>
+                    <span class="text-success small"><i class="bi bi-arrow-up me-1"></i> 8% from last week</span>
+                </div>
+                <div class="rounded-3 bg-primary bg-opacity-10 p-3">
+                    <i class="bi bi-calendar-check text-primary fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card info-card sales-card h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <h6 class="text-muted text-uppercase small fw-600 mb-1">Departments</h6>
+                    <h3 class="mb-0 fw-bold">@ViewBag.TotalDepartments</h3>
+                    <span class="text-info small"><i class="bi bi-building me-1"></i> Across organization</span>
+                </div>
+                <div class="rounded-3 bg-warning bg-opacity-10 p-3">
+                    <i class="bi bi-building text-warning fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card info-card staff-card h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <h6 class="text-muted text-uppercase small fw-600 mb-1">Total Staff</h6>
+                    <h3 class="mb-0 fw-bold">@ViewBag.TotalStaff</h3>
+                    <span class="text-primary small"><i class="bi bi-people me-1"></i> Active members</span>
+                </div>
+                <div class="rounded-3 p-3" style="background: rgba(139, 92, 246, 0.1);">
+                    <i class="bi bi-people-fill fs-3" style="color: #8b5cf6;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title d-flex align-items-center mb-4">
+                    <i class="bi bi-pie-chart me-2 text-primary"></i> Meetings by Type
+                </h5>
+                <div class="position-relative" style="height: 280px;">
+                    <canvas id="meetingTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title d-flex align-items-center mb-4">
+                    <i class="bi bi-bar-chart me-2 text-primary"></i> Meetings by Department
+                </h5>
+                <div class="position-relative" style="height: 280px;">
+                    <canvas id="meetingDeptChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/assets/vendor/chart.js/chart.umd.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeCtx = document.getElementById('meetingTypeChart');
+    if (typeCtx) {
+        new Chart(typeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Board', 'Standup', 'Review', 'Planning', 'Other'],
+                datasets: [{
+                    data: [30, 25, 20, 15, 10],
+                    backgroundColor: ['#4361ee', '#06d6a0', '#f59e0b', '#8b5cf6', '#64748b'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+    const deptCtx = document.getElementById('meetingDeptChart');
+    if (deptCtx) {
+        new Chart(deptCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Engineering', 'Marketing', 'Sales', 'HR', 'Operations'],
+                datasets: [{
+                    label: 'Meetings',
+                    data: [12, 8, 6, 5, 4],
+                    backgroundColor: 'rgba(67, 97, 238, 0.7)',
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+});
+</script>
+}

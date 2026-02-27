@@ -1,0 +1,56 @@
+@model MOM.Models.MeetingVenueModel
+@{
+    ViewData["Title"] = Model.MeetingVenueID == 0 ? "Add Venue" : "Edit Venue";
+}
+
+<div class="pagetitle">
+    <h1>@(Model.MeetingVenueID == 0 ? "Add" : "Edit") Venue</h1>
+    <p class="text-muted mb-0">@(Model.MeetingVenueID == 0 ? "Add a meeting venue" : "Update venue details")</p>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="MeetingVenue" asp-action="Index">Meeting Venue</a></li>
+            <li class="breadcrumb-item active">@(Model.MeetingVenueID == 0 ? "Add" : "Edit")</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-geo-alt me-2 text-primary"></i>
+                        @(Model.MeetingVenueID == 0 ? "New Venue" : "Edit Venue")
+                    </h5>
+                </div>
+                <div class="card-body pt-0">
+                    <form asp-action="@(Model.MeetingVenueID == 0 ? "Create" : "Update")" method="post" class="row g-3">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="MeetingVenueID" />
+                        <input type="hidden" asp-for="Created" />
+                        <input type="hidden" asp-for="Modified" />
+
+                        <div class="col-12">
+                            <label asp-for="MeetingVenueName" class="form-label">Venue Name</label>
+                            <input asp-for="MeetingVenueName" class="form-control" placeholder="e.g. Conference Room A" />
+                            <span asp-validation-for="MeetingVenueName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 d-flex gap-2 justify-content-end pt-2 border-top mt-3">
+                            <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="reset" class="btn btn-secondary">Reset</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Save
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

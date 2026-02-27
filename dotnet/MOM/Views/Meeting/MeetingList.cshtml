@@ -1,0 +1,77 @@
+@model IEnumerable<MOM.Models.MeetingsModel>
+@using MOM.Data
+@{
+    ViewData["Title"] = "Meeting List";
+}
+
+<div class="pagetitle">
+    <h1>Meetings</h1>
+    <p class="text-muted">View and manage all meetings</p>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item">Meetings</li>
+            <li class="breadcrumb-item active">List</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-calendar-week me-2 text-primary"></i> Meetings
+                    </h5>
+                    <a asp-action="MeetingAddEdit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Add Meeting
+                    </a>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover datatable align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Type</th>
+                                    <th>Venue</th>
+                                    <th>Date</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    foreach (var item in Model)
+                                    {
+                                        <tr>
+                                            <td><span class="fw-medium">@item.MeetingId</span></td>
+                                            <td>@(item.MeetingType?.MeetingTypeName ?? "Unknown")</td>
+                                            <td>@(item.Venue?.MeetingVenueName ?? "Unknown")</td>
+                                            <td>@item.MeetingDate.ToString("yyyy/MM/dd HH:mm")</td>
+                                            <td class="text-end">
+                                                <a asp-action="MeetingAddEdit" asp-route-id="@item.MeetingId" class="btn btn-outline-primary btn-sm" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a asp-action="Delete" asp-route-id="@item.MeetingId" class="btn btn-outline-danger btn-sm" title="Delete" onclick="return confirm('Are you sure you want to delete this meeting?');">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="table-empty-state">No meetings found. Add your first meeting above.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

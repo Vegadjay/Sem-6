@@ -1,0 +1,90 @@
+@model IEnumerable<MOM.Models.MeetingMemberModel>
+@{
+    ViewData["Title"] = "Meeting Member List";
+}
+
+<div class="pagetitle">
+    <h1>Meeting Members</h1>
+    <p class="text-muted">Manage meeting attendees and attendance</p>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item">Meeting Members</li>
+            <li class="breadcrumb-item active">List</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-people me-2 text-primary"></i> Meeting Members
+                    </h5>
+                    <a asp-action="Create" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Add Member
+                    </a>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover datatable align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Meeting Date & Info</th>
+                                    <th>Staff Member</th>
+                                    <th>Status</th>
+                                    <th>Remarks</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    int count = 1 ;
+                                    foreach (var item in Model)
+                                    {
+                                        <tr>
+                                            <td><span class="fw-medium">@count</span></td>
+                                            <td>
+                                                <div class="d-flex flex-column">
+                                                    <span class="fw-semibold">@(item.Meeting?.MeetingDate?.ToString("dd MMM yyyy") ?? "No Date")</span>
+                                                    <span class="small text-muted">@(item.Meeting?.MeetingDescription ?? "No Details")</span>
+                                                </div>
+                                            </td>
+                                            <td>@(item.Staff?.StaffName ?? "Unknown")</td>
+                                            <td>
+                                                @if (item.IsPresent)
+                                                { <span class="badge bg-success">Present</span> }
+                                                else
+                                                { <span class="badge bg-danger">Absent</span> }
+                                            </td>
+                                            <td>@(item.Remarks ?? "—")</td>
+                                            <td class="text-end">
+                                                <a asp-action="Update" asp-route-id="@item.MeetingMemberID" class="btn btn-outline-primary btn-sm" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a href="javascript:void(0);" onclick="confirmDelete('@Url.Action("Delete", "MeetingMember", new { id = item.MeetingMemberID })')" class="btn btn-outline-danger btn-sm" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        count++;
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="6" class="table-empty-state">No meeting members found. Add your first member above.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

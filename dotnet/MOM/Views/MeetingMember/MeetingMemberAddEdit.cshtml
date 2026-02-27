@@ -1,0 +1,93 @@
+@model MOM.Models.MeetingMemberModel
+@{
+    ViewData["Title"] = Model.MeetingMemberID == 0 ? "Add Member" : "Edit Member";
+}
+
+<div class="pagetitle">
+    <h1>@(Model.MeetingMemberID == 0 ? "Add" : "Edit") Meeting Member</h1>
+    <p class="text-muted mb-0">@(Model.MeetingMemberID == 0 ? "Add a member to a meeting" : "Update attendance or remarks")</p>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="MeetingMember" asp-action="MeetingMemberList">Meeting Members</a></li>
+            <li class="breadcrumb-item active">@(Model.MeetingMemberID == 0 ? "Add" : "Edit")</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="card-title mb-0 d-flex align-items-center">
+                        <i class="bi bi-people me-2 text-primary"></i>
+                        @(Model.MeetingMemberID == 0 ? "New Meeting Member" : "Edit Meeting Member")
+                    </h5>
+                </div>
+                <div class="card-body pt-0">
+                    <form asp-action="Save" method="post" class="row g-3">
+                        <input type="hidden" asp-for="MeetingMemberID" />
+                        <input type="hidden" asp-for="Created" />
+                        <input type="hidden" asp-for="Modified" />
+
+                        <input type="hidden" asp-for="MeetingID" />
+                        <input type="hidden" asp-for="StaffID" />
+
+                        @if (Model.MeetingMemberID != 0)
+                        {
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small text-uppercase fw-bold">Meeting</label>
+                                <div class="p-2 border bg-light rounded shadow-sm">
+                                    <i class="bi bi-calendar-event me-2 text-primary"></i>
+                                    @(Model.Meeting?.MeetingDate.ToString("yyyy-MM-dd HH:mm") ?? "N/A")
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small text-uppercase fw-bold">Staff Member</label>
+                                <div class="p-2 border bg-light rounded shadow-sm">
+                                    <i class="bi bi-person me-2 text-primary"></i>
+                                    @(Model.Staff?.Name ?? "N/A")
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Please use the <strong><a asp-controller="Meeting" asp-action="Attandance">Bulk Attendance</a></strong> page to add new members to a meeting.
+                                </div>
+                            </div>
+                        }
+                        <div class="col-12">
+                            <div class="form-check form-switch card p-3 border-0 bg-light">
+                                <div class="ms-4">
+                                    <input class="form-check-input ms-0" type="checkbox" asp-for="IsPresent" id="IsPresent">
+                                    <label class="form-check-label ms-2 fw-semibold" asp-for="IsPresent">Mark as Present</label>
+                                    <div class="form-text">Toggle this to record if the staff member attended the meeting.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Remarks" class="form-label">Remarks</label>
+                            <textarea asp-for="Remarks" class="form-control" rows="3" placeholder="Add any specific notes about this attendee..."></textarea>
+                            <span asp-validation-for="Remarks" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 d-flex gap-2 justify-content-end pt-3 border-top mt-4">
+                            <a asp-action="MeetingMemberList" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save me-1"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -12,7 +12,7 @@ public class MeetingsModel : IValidatableObject
 
     [Display(Name = "Meeting Date")]
     [Required(ErrorMessage = "Please select a date and time")]
-    [DisplayFormat(DataFormatString = "{0:yyyy-MM-ddTHH:mm}", ApplyInEditMode = true)]
+    [DisplayFormat(DataFormatString = "{0:yyyy-MM-ddTHH:mm}", ApplyFormatInEditMode = true)]
     public DateTime? MeetingDate { get; set; }
 
     [Display(Name = "Meeting Venue")]

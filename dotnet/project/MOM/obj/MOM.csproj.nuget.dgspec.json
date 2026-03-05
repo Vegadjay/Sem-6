@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/jay-vegad/Desktop/coding/sem-6/dotnet/project/1/MOM/MOM.csproj": {}
+    "/home/jay-vegad/Desktop/coding/sem-6/dotnet/project/MOM/MOM.csproj": {}
   },
   "projects": {
-    "/home/jay-vegad/Desktop/coding/sem-6/dotnet/project/1/MOM/MOM.csproj": {
+    "/home/jay-vegad/Desktop/coding/sem-6/dotnet/project/MOM/MOM.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/jay-vegad/Desktop/coding/sem-6/dotnet/project/1/MOM/MOM.csproj",
+        "projectUniqueName": "/home/jay-vegad/Desktop/coding/sem-6/dotnet/project/MOM/MOM.csproj",
         "projectName": "MOM",
-        "projectPath": "/home/jay-vegad/Desktop/coding/sem-6/dotnet/project/1/MOM/MOM.csproj",
+        "projectPath": "/home/jay-vegad/Desktop/coding/sem-6/dotnet/project/MOM/MOM.csproj",
         "packagesPath": "/home/jay-vegad/.nuget/packages/",
-        "outputPath": "/home/jay-vegad/Desktop/coding/sem-6/dotnet/project/1/MOM/obj/",
+        "outputPath": "/home/jay-vegad/Desktop/coding/sem-6/dotnet/project/MOM/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/jay-vegad/.nuget/NuGet/NuGet.Config"

@@ -17,7 +17,6 @@ namespace MOM.Data
         public DbSet<MeetingVenueModel> MeetingVenues { get; set; }
         public DbSet<DepartmentModel> Departments { get; set; }
 
-        // Stored procedure result models
         public virtual DbSet<MeetingListVM> MeetingListVM { get; set; } = null!;
         public virtual DbSet<StaffListVM> StaffListVM { get; set; } = null!;
 

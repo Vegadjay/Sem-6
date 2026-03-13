@@ -1,29 +1,55 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using MOM.Data;
 using MOM.Models;
+using System.Data;
 
 namespace MOM.Controllers
 {
     public class MeetingVenueController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
+        private readonly string _connectionString;
 
-        public MeetingVenueController(ApplicationDbContext context)
+        public MeetingVenueController(IConfiguration configuration)
         {
-            _context = context;
+            _configuration = configuration;
+            _connectionString = _configuration.GetConnectionString("MOMConnection") ?? throw new InvalidOperationException("Connection string 'MOMConnection' not found.");
         }
 
         public async Task<IActionResult> Index(string? SearchText = null, int? page = null)
         {
             ViewBag.CurrentSearchText = SearchText;
 
-            // Use search stored procedure via EF
-            var searchTextParam = new SqlParameter("@SearchText", (object?)SearchText ?? DBNull.Value);
-            var data = await _context.MeetingVenues
-                .FromSqlRaw("EXEC PR_MOM_MeetingVenue_Search @SearchText", searchTextParam)
-                .ToListAsync();
+            var data = new List<MeetingVenueModel>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("PR_MOM_MeetingVenue_Search", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    if (string.IsNullOrEmpty(SearchText))
+                    {
+                        command.Parameters.AddWithValue("@SearchText", DBNull.Value);
+                    }
+                    else
+                    {
+                        command.Parameters.AddWithValue("@SearchText", SearchText);
+                    }
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            data.Add(new MeetingVenueModel
+                            {
+                                MeetingVenueID = reader.GetInt32(reader.GetOrdinal("MeetingVenueID")),
+                                MeetingVenueName = reader.GetString(reader.GetOrdinal("MeetingVenueName"))
+                            });
+                        }
+                    }
+                }
+            }
 
             // Pagination setup
             int pageSize = 10;
@@ -42,57 +68,119 @@ namespace MOM.Controllers
         public IActionResult Create() => View("MeetingVenueAddEdit", new MeetingVenueModel());
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> Create(MeetingVenueModel model)
         {
             if (!ModelState.IsValid) return View("MeetingVenueAddEdit", model);
 
-            var parameters = new[]
+            using (var connection = new SqlConnection(_connectionString))
             {
-                new SqlParameter("@VenueName", model.MeetingVenueName)
-            };
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("PR_MOM_MeetingVenue_Insert", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@VenueName", model.MeetingVenueName);
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
 
-            await _context.Database.ExecuteSqlRawAsync("EXEC PR_MOM_MeetingVenue_Insert @VenueName", parameters);
             return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Details(int id)
         {
-            var meetingVenue = await _context.MeetingVenues.FirstOrDefaultAsync(m => m.MeetingVenueID == id);
+            MeetingVenueModel? meetingVenue = null;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("SELECT MeetingVenueID, MeetingVenueName FROM MOM_MeetingVenue WHERE MeetingVenueID = @VenueID", connection))
+                {
+                    command.Parameters.AddWithValue("@VenueID", id);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            meetingVenue = new MeetingVenueModel
+                            {
+                                MeetingVenueID = reader.GetInt32(reader.GetOrdinal("MeetingVenueID")),
+                                MeetingVenueName = reader.GetString(reader.GetOrdinal("MeetingVenueName"))
+                            };
+                        }
+                    }
+                }
+            }
+
             if (meetingVenue == null) return NotFound();
             return View(meetingVenue);
         }
 
         public async Task<IActionResult> Update(int id)
         {
-            var meetingVenue = await _context.MeetingVenues.FindAsync(id);
+            MeetingVenueModel? meetingVenue = null;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("SELECT MeetingVenueID, MeetingVenueName FROM MOM_MeetingVenue WHERE MeetingVenueID = @VenueID", connection))
+                {
+                    command.Parameters.AddWithValue("@VenueID", id);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            meetingVenue = new MeetingVenueModel
+                            {
+                                MeetingVenueID = reader.GetInt32(reader.GetOrdinal("MeetingVenueID")),
+                                MeetingVenueName = reader.GetString(reader.GetOrdinal("MeetingVenueName"))
+                            };
+                        }
+                    }
+                }
+            }
+
             if (meetingVenue == null) return NotFound();
             return View("MeetingVenueAddEdit", meetingVenue);
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> Update(MeetingVenueModel model)
         {
             if (!ModelState.IsValid) return View("MeetingVenueAddEdit", model);
 
-            var parameters = new[]
+            using (var connection = new SqlConnection(_connectionString))
             {
-                new SqlParameter("@VenueID", model.MeetingVenueID),
-                new SqlParameter("@VenueName", model.MeetingVenueName)
-            };
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("PR_MOM_MeetingVenue_UpdateByPK", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@VenueID", model.MeetingVenueID);
+                    command.Parameters.AddWithValue("@VenueName", model.MeetingVenueName);
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
 
-            await _context.Database.ExecuteSqlRawAsync("EXEC PR_MOM_MeetingVenue_UpdateByPK @VenueID, @VenueName", parameters);
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
-                await _context.Database.ExecuteSqlRawAsync("EXEC PR_MOM_MeetingVenue_DeleteByPK {0}", id);
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
+                    using (var command = new SqlCommand("PR_MOM_MeetingVenue_DeleteByPK", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@VenueID", id);
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+
                 TempData["Success"] = "Meeting Venue deleted successfully.";
             }
             catch (SqlException ex) when (ex.Number == 547)

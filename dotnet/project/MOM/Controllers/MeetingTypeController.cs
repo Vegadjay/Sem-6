@@ -1,28 +1,55 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
-using MOM.Data;
 using MOM.Models;
+using System.Data;
 
 namespace MOM.Controllers
 {
     public class MeetingTypeController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
+        private readonly string _connectionString;
 
-        public MeetingTypeController(ApplicationDbContext context)
+        public MeetingTypeController(IConfiguration configuration)
         {
-            _context = context;
+            _configuration = configuration;
+            _connectionString = _configuration.GetConnectionString("MOMConnection") ?? throw new InvalidOperationException("Connection string 'MOMConnection' not found.");
         }
 
 
         public async Task<IActionResult> Index(string? SearchText = null, int? page = null)
         {
-            var searchTextParam = new SqlParameter("@SearchText", (object?)SearchText ?? DBNull.Value);
+            var data = new List<MeetingTypeModel>();
 
-            var data = await _context.MeetingTypes
-                .FromSqlRaw("EXEC PR_MOM_MeetingType_Search @SearchText", searchTextParam)
-                .ToListAsync();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("PR_MOM_MeetingType_Search", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    if (string.IsNullOrEmpty(SearchText))
+                    {
+                        command.Parameters.AddWithValue("@SearchText", DBNull.Value);
+                    }
+                    else
+                    {
+                        command.Parameters.AddWithValue("@SearchText", SearchText);
+                    }
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            data.Add(new MeetingTypeModel
+                            {
+                                MeetingTypeID = reader.GetInt32(reader.GetOrdinal("MeetingTypeID")),
+                                MeetingTypeName = reader.GetString(reader.GetOrdinal("MeetingTypeName")),
+                                Remarks = reader.IsDBNull(reader.GetOrdinal("Remarks")) ? null : reader.GetString(reader.GetOrdinal("Remarks"))
+                            });
+                        }
+                    }
+                }
+            }
 
             int pageSize = 10;
             int pageNumber = page ?? 1;
@@ -44,21 +71,23 @@ namespace MOM.Controllers
         public IActionResult Create() => View("MeetingTypeAddEdit", new MeetingTypeModel());
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> Create(MeetingTypeModel model)
         {
             if (ModelState.IsValid)
             {
-                var parameters = new[]
+                using (var connection = new SqlConnection(_connectionString))
                 {
-                    new SqlParameter("@MeetingTypeName", model.MeetingTypeName),
-                    new SqlParameter("@Remarks", (object?)model.Remarks ?? DBNull.Value)
-                };
-
-                await _context.Database.ExecuteSqlRawAsync(
-                    "EXEC PR_MOM_MeetingType_Insert @MeetingTypeName, @Remarks",
-                    parameters
-                );
+                    await connection.OpenAsync();
+                    using (var command = new SqlCommand("PR_MOM_MeetingType_Insert", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@MeetingTypeName", model.MeetingTypeName);
+                        command.Parameters.AddWithValue("@Remarks", (object?)model.Remarks ?? DBNull.Value);
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+                
                 return RedirectToAction(nameof(Index));
             }
             return View("MeetingTypeAddEdit", model);
@@ -67,28 +96,52 @@ namespace MOM.Controllers
 
         public async Task<IActionResult> Update(int id)
         {
-            var data = await _context.MeetingTypes.FindAsync(id);
+            MeetingTypeModel? data = null;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("SELECT MeetingTypeID, MeetingTypeName, Remarks FROM MOM_MeetingType WHERE MeetingTypeID = @MeetingTypeID", connection))
+                {
+                    command.Parameters.AddWithValue("@MeetingTypeID", id);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            data = new MeetingTypeModel
+                            {
+                                MeetingTypeID = reader.GetInt32(reader.GetOrdinal("MeetingTypeID")),
+                                MeetingTypeName = reader.GetString(reader.GetOrdinal("MeetingTypeName")),
+                                Remarks = reader.IsDBNull(reader.GetOrdinal("Remarks")) ? null : reader.GetString(reader.GetOrdinal("Remarks"))
+                            };
+                        }
+                    }
+                }
+            }
+
             if (data == null) return NotFound();
             return View("MeetingTypeAddEdit", data);
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> Update(MeetingTypeModel model)
         {
             if (ModelState.IsValid)
             {
-                var parameters = new[]
+                using (var connection = new SqlConnection(_connectionString))
                 {
-                    new SqlParameter("@MeetingTypeID", model.MeetingTypeID),
-                    new SqlParameter("@MeetingTypeName", model.MeetingTypeName),
-                    new SqlParameter("@Remarks", (object?)model.Remarks ?? DBNull.Value)
-                };
+                    await connection.OpenAsync();
+                    using (var command = new SqlCommand("PR_MOM_MeetingType_UpdateByPK", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@MeetingTypeID", model.MeetingTypeID);
+                        command.Parameters.AddWithValue("@MeetingTypeName", model.MeetingTypeName);
+                        command.Parameters.AddWithValue("@Remarks", (object?)model.Remarks ?? DBNull.Value);
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
 
-                await _context.Database.ExecuteSqlRawAsync(
-                    "EXEC PR_MOM_MeetingType_UpdateByPK @MeetingTypeID, @MeetingTypeName, @Remarks",
-                    parameters
-                );
                 return RedirectToAction(nameof(Index));
             }
             return View("MeetingTypeAddEdit", model);
@@ -97,8 +150,28 @@ namespace MOM.Controllers
 
         public async Task<IActionResult> Details(int id)
         {
-            var meetingType = await _context.MeetingTypes
-                .FirstOrDefaultAsync(m => m.MeetingTypeID == id);
+            MeetingTypeModel? meetingType = null;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("SELECT MeetingTypeID, MeetingTypeName, Remarks FROM MOM_MeetingType WHERE MeetingTypeID = @MeetingTypeID", connection))
+                {
+                    command.Parameters.AddWithValue("@MeetingTypeID", id);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            meetingType = new MeetingTypeModel
+                            {
+                                MeetingTypeID = reader.GetInt32(reader.GetOrdinal("MeetingTypeID")),
+                                MeetingTypeName = reader.GetString(reader.GetOrdinal("MeetingTypeName")),
+                                Remarks = reader.IsDBNull(reader.GetOrdinal("Remarks")) ? null : reader.GetString(reader.GetOrdinal("Remarks"))
+                            };
+                        }
+                    }
+                }
+            }
 
             if (meetingType == null)
             {
@@ -109,14 +182,22 @@ namespace MOM.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
-                await _context.Database.ExecuteSqlRawAsync(
-                    "EXEC PR_MOM_MeetingType_DeleteByPK {0}", id
-                );
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
+                    using (var command = new SqlCommand("PR_MOM_MeetingType_DeleteByPK", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@MeetingTypeID", id);
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+
                 TempData["Success"] = "Meeting Type deleted successfully.";
             }
             catch (SqlException ex) when (ex.Number == 547)

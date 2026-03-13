@@ -1,31 +1,56 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using MOM.Data;
 using MOM.Models;
+using System.Data;
 
 namespace MOM.Controllers
 {
     public class DepartmentController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
+        private readonly string _connectionString;
 
-        public DepartmentController(ApplicationDbContext context)
+        public DepartmentController(IConfiguration configuration)
         {
-            _context = context;
+            _configuration = configuration;
+            _connectionString = _configuration.GetConnectionString("MOMConnection") ?? throw new InvalidOperationException("Connection string 'MOMConnection' not found.");
         }
 
         public async Task<IActionResult> Index(string? SearchText = null, int? page = null)
         {
             ViewBag.CurrentSearchText = SearchText;
 
-            // Use search stored procedure via EF
-            var searchTextParam = new SqlParameter("@SearchText", (object?)SearchText ?? DBNull.Value);
-            var departments = await _context.Departments
-                .FromSqlRaw("EXEC PR_MOM_Department_Search @SearchText", searchTextParam)
-                .ToListAsync();
+            var departments = new List<DepartmentModel>();
 
-            // Pagination setup
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("PR_MOM_Department_Search", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    if (string.IsNullOrEmpty(SearchText))
+                    {
+                        command.Parameters.AddWithValue("@SearchText", DBNull.Value);
+                    }
+                    else
+                    {
+                        command.Parameters.AddWithValue("@SearchText", SearchText);
+                    }                    
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            departments.Add(new DepartmentModel
+                            {
+                                DepartmentID = reader.GetInt32(reader.GetOrdinal("DepartmentID")),
+                                DepartmentName = reader.GetString(reader.GetOrdinal("DepartmentName"))
+                            });
+                        }
+                    }
+                }
+            }
+
             int pageSize = 10;
             int pageNumber = page ?? 1;
             int totalRecords = departments.Count;
@@ -42,55 +67,117 @@ namespace MOM.Controllers
         public IActionResult Create() => View("DepartmentAddEdit", new DepartmentModel());
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(DepartmentModel model)
         {
             if (!ModelState.IsValid) return View("DepartmentAddEdit", model);
 
-            var parameters = new[]
+            using (var connection = new SqlConnection(_connectionString))
             {
-                new SqlParameter("@DepartmentName", model.DepartmentName)
-            };
-            await _context.Database.ExecuteSqlRawAsync("EXEC PR_MOM_Department_Insert @DepartmentName", parameters);
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("PR_MOM_Department_Insert", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@DepartmentName", model.DepartmentName);
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet]
         public async Task<IActionResult> Update(int id)
         {
-            var department = await _context.Departments.FindAsync(id);
+            DepartmentModel? department = null;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("SELECT DepartmentID, DepartmentName FROM MOM_Department WHERE DepartmentID = @DepartmentID", connection))
+                {
+                    command.Parameters.AddWithValue("@DepartmentID", id);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            department = new DepartmentModel
+                            {
+                                DepartmentID = reader.GetInt32(reader.GetOrdinal("DepartmentID")),
+                                DepartmentName = reader.GetString(reader.GetOrdinal("DepartmentName"))
+                            };
+                        }
+                    }
+                }
+            }
+
             if (department == null) return NotFound();
             return View("DepartmentAddEdit", department);
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Update(DepartmentModel model)
         {
             if (!ModelState.IsValid) return View("DepartmentAddEdit", model);
 
-            var parameters = new[]
+            using (var connection = new SqlConnection(_connectionString))
             {
-                new SqlParameter("@DepartmentID", model.DepartmentID),
-                new SqlParameter("@DepartmentName", model.DepartmentName)
-            };
-            await _context.Database.ExecuteSqlRawAsync("EXEC PR_MOM_Department_UpdateByPK @DepartmentID, @DepartmentName", parameters);
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("PR_MOM_Department_UpdateByPK", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@DepartmentID", model.DepartmentID);
+                    command.Parameters.AddWithValue("@DepartmentName", model.DepartmentName);
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+            
             return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Details(int id)
         {
-            var department = await _context.Departments.FirstOrDefaultAsync(m => m.DepartmentID == id);
+            DepartmentModel? department = null;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("SELECT DepartmentID, DepartmentName FROM MOM_Department WHERE DepartmentID = @DepartmentID", connection))
+                {
+                    command.Parameters.AddWithValue("@DepartmentID", id);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            department = new DepartmentModel
+                            {
+                                DepartmentID = reader.GetInt32(reader.GetOrdinal("DepartmentID")),
+                                DepartmentName = reader.GetString(reader.GetOrdinal("DepartmentName"))
+                            };
+                        }
+                    }
+                }
+            }
+
             if (department == null) return NotFound();
             return View(department);
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
-                await _context.Database.ExecuteSqlRawAsync("EXEC PR_MOM_Department_DeleteByPK {0}", id);
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
+                    using (var command = new SqlCommand("PR_MOM_Department_DeleteByPK", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@DepartmentID", id);
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+                
                 TempData["Success"] = "Department deleted successfully.";
             }
             catch (SqlException ex) when (ex.Number == 547)

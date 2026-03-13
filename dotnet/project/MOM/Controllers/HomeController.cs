@@ -1,104 +1,189 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using MOM.Data;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using MOM.Models;
 using System.Diagnostics;
+using System.Data;
 
 namespace MOM.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
+        private readonly string _connectionString;
 
-        public HomeController(ApplicationDbContext context)
+        public HomeController(IConfiguration configuration)
         {
-            _context = context;
+            _configuration = configuration;
+            _connectionString = _configuration.GetConnectionString("MOMConnection") ?? throw new InvalidOperationException("Connection string 'MOMConnection' not found.");
         }
 
         public async Task<IActionResult> Index()
         {
-            DashboardViewModel model = new DashboardViewModel
-            {
-                TotalMeetingTypes = await _context.MeetingTypes.CountAsync(),
-                TotalDepartments = await _context.Departments.CountAsync(),
-                TotalStaff = await _context.Staff.CountAsync(),
-                TotalVenues = await _context.MeetingVenues.CountAsync(),
-                TotalMeetings = await _context.Meetings.CountAsync(),
-                CancelledMeetings = await _context.Meetings
-                    .Where(m => m.IsCancelled == true)
-                    .CountAsync()
-            };
-
-            // 1. Meetings by Department (Top 5)
-            var deptStats = await _context.Meetings
-                .Include(m => m.Department)
-                .GroupBy(m => m.Department!.DepartmentName)
-                .Select(g => new { Name = g.Key, Count = g.Count() })
-                .OrderByDescending(x => x.Count)
-                .Take(5)
-                .ToListAsync();
-
-            model.DepartmentNames = deptStats.Select(x => x.Name).ToList();
-            model.DepartmentCounts = deptStats.Select(x => x.Count).ToList();
-
-            // 2. Meetings by Type (Top 5)
-            var typeStats = await _context.Meetings
-                .Include(m => m.MeetingType)
-                .GroupBy(m => m.MeetingType!.MeetingTypeName)
-                .Select(g => new { Name = g.Key, Count = g.Count() })
-                .OrderByDescending(x => x.Count)
-                .Take(5)
-                .ToListAsync();
-
-            model.MeetingTypeNames = typeStats.Select(x => x.Name).ToList();
-            model.MeetingTypeCounts = typeStats.Select(x => x.Count).ToList();
-
-            // 3. Monthly Trends (Last 6 Months)
-
-            var sixMonthsAgo = DateTime.Now.AddMonths(-6);
-            var monthlyStats = await _context.Meetings
-               .Where(m => m.MeetingDate >= sixMonthsAgo)
-               .OrderBy(m => m.MeetingDate)
-               .ToListAsync();
-
-            var groupedMonths = monthlyStats
-                .GroupBy(m => m.MeetingDate.HasValue ? m.MeetingDate.Value.ToString("MMM yyyy") : "Unknown")
-                .Select(g => new { Month = g.Key, Count = g.Count() })
-                .ToList();
-
-            model.MonthLabels = groupedMonths.Select(x => x.Month).ToList();
-            model.MonthlyCounts = groupedMonths.Select(x => x.Count).ToList();
-
-            // 4. Venue Utilization (Top 5)
-            var venueStats = await _context.Meetings
-                .Include(m => m.MeetingVenue)
-                .GroupBy(m => m.MeetingVenue!.MeetingVenueName)
-                .Select(g => new { Name = g.Key, Count = g.Count() })
-                .OrderByDescending(x => x.Count)
-                .Take(5)
-                .ToListAsync();
-
-            model.VenueNames = venueStats.Select(x => x.Name).ToList();
-            model.VenueCounts = venueStats.Select(x => x.Count).ToList();
-
-            // 5. Top Staff Contributors (Top 5)
             try
             {
-                var staffStats = await _context.Set<MeetingMemberModel>()
-                   .Include(mm => mm.Staff)
-                   .GroupBy(mm => mm.Staff!.StaffName)
-                   .Select(g => new { Name = g.Key, Count = g.Count() })
-                   .OrderByDescending(x => x.Count)
-                   .Take(5)
-                   .ToListAsync();
-
-                model.StaffNames = staffStats.Select(x => x.Name).ToList();
-                model.StaffCounts = staffStats.Select(x => x.Count).ToList();
+                return await IndexCoreAsync();
             }
-            catch
+            catch (SqlException ex)
             {
-                model.StaffNames = new List<string>();
-                model.StaffCounts = new List<int>();
+                return View("Error", new ErrorViewModel
+                {
+                    RequestId = "Database connection failed. Ensure SQL Server is running and the connection string in appsettings.json is correct. Details: " + ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return View("Error", new ErrorViewModel { RequestId = "An error occurred: " + ex.Message });
+            }
+        }
+
+        private async Task<IActionResult> IndexCoreAsync()
+        {
+            DashboardViewModel model = new DashboardViewModel();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                string countsQuery = @"
+                    SELECT 
+                        (SELECT COUNT(*) FROM MOM_MeetingType) AS TotalMeetingTypes,
+                        (SELECT COUNT(*) FROM MOM_Department) AS TotalDepartments,
+                        (SELECT COUNT(*) FROM MOM_Staff) AS TotalStaff,
+                        (SELECT COUNT(*) FROM MOM_MeetingVenue) AS TotalVenues,
+                        (SELECT COUNT(*) FROM MOM_Meetings) AS TotalMeetings,
+                        (SELECT COUNT(*) FROM MOM_Meetings WHERE IsCancelled = 1) AS CancelledMeetings
+                ";
+
+                using (var command = new SqlCommand(countsQuery, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            model.TotalMeetingTypes = reader.GetInt32(0);
+                            model.TotalDepartments = reader.GetInt32(1);
+                            model.TotalStaff = reader.GetInt32(2);
+                            model.TotalVenues = reader.GetInt32(3);
+                            model.TotalMeetings = reader.GetInt32(4);
+                            model.CancelledMeetings = reader.GetInt32(5);
+                        }
+                    }
+                }
+
+                // 1. Meetings by Department (Top 5)
+                string deptQuery = @"
+                    SELECT TOP 5 d.DepartmentName, COUNT(m.MeetingID) AS Count
+                    FROM MOM_Meetings m
+                    JOIN MOM_Department d ON m.DepartmentID = d.DepartmentID
+                    GROUP BY d.DepartmentName
+                    ORDER BY Count DESC";
+                using (var command = new SqlCommand(deptQuery, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        model.DepartmentNames = new List<string>();
+                        model.DepartmentCounts = new List<int>();
+                        while (await reader.ReadAsync())
+                        {
+                            model.DepartmentNames.Add(reader.GetString(0));
+                            model.DepartmentCounts.Add(reader.GetInt32(1));
+                        }
+                    }
+                }
+
+                // 2. Meetings by Type (Top 5)
+                string typeQuery = @"
+                    SELECT TOP 5 mt.MeetingTypeName, COUNT(m.MeetingID) AS Count
+                    FROM MOM_Meetings m
+                    JOIN MOM_MeetingType mt ON m.MeetingTypeID = mt.MeetingTypeID
+                    GROUP BY mt.MeetingTypeName
+                    ORDER BY Count DESC";
+                using (var command = new SqlCommand(typeQuery, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        model.MeetingTypeNames = new List<string>();
+                        model.MeetingTypeCounts = new List<int>();
+                        while (await reader.ReadAsync())
+                        {
+                            model.MeetingTypeNames.Add(reader.GetString(0));
+                            model.MeetingTypeCounts.Add(reader.GetInt32(1));
+                        }
+                    }
+                }
+
+                // 3. Monthly Trends (Last 6 Months)
+                string trendQuery = @"
+                    SELECT 
+                        FORMAT(MeetingDate, 'MMM yyyy') AS MonthLabel, 
+                        COUNT(MeetingID) AS Count
+                    FROM MOM_Meetings
+                    WHERE MeetingDate >= DATEADD(month, -6, GETDATE())
+                    GROUP BY FORMAT(MeetingDate, 'MMM yyyy'), YEAR(MeetingDate), MONTH(MeetingDate)
+                    ORDER BY YEAR(MeetingDate), MONTH(MeetingDate)";
+                using (var command = new SqlCommand(trendQuery, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        model.MonthLabels = new List<string>();
+                        model.MonthlyCounts = new List<int>();
+                        while (await reader.ReadAsync())
+                        {
+                            model.MonthLabels.Add(reader.GetString(0));
+                            model.MonthlyCounts.Add(reader.GetInt32(1));
+                        }
+                    }
+                }
+
+                // 4. Venue Utilization (Top 5)
+                string venueQuery = @"
+                    SELECT TOP 5 mv.MeetingVenueName, COUNT(m.MeetingID) AS Count
+                    FROM MOM_Meetings m
+                    JOIN MOM_MeetingVenue mv ON m.MeetingVenueID = mv.MeetingVenueID
+                    GROUP BY mv.MeetingVenueName
+                    ORDER BY Count DESC";
+                using (var command = new SqlCommand(venueQuery, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        model.VenueNames = new List<string>();
+                        model.VenueCounts = new List<int>();
+                        while (await reader.ReadAsync())
+                        {
+                            model.VenueNames.Add(reader.GetString(0));
+                            model.VenueCounts.Add(reader.GetInt32(1));
+                        }
+                    }
+                }
+
+                // 5. Top Staff Contributors (Top 5)
+                try
+                {
+                    string staffQuery = @"
+                        SELECT TOP 5 s.StaffName, COUNT(mm.MeetingMemberID) AS Count
+                        FROM MOM_MeetingMember mm
+                        JOIN MOM_Staff s ON mm.StaffID = s.StaffID
+                        GROUP BY s.StaffName
+                        ORDER BY Count DESC";
+                    using (var command = new SqlCommand(staffQuery, connection))
+                    {
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            model.StaffNames = new List<string>();
+                            model.StaffCounts = new List<int>();
+                            while (await reader.ReadAsync())
+                            {
+                                model.StaffNames.Add(reader.GetString(0));
+                                model.StaffCounts.Add(reader.GetInt32(1));
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    model.StaffNames = new List<string>();
+                    model.StaffCounts = new List<int>();
+                }
             }
 
             return View(model);

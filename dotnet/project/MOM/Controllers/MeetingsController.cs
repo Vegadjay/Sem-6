@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using MOM.Data;
 using MOM.Models;
 using System.Data;
 
@@ -9,11 +7,13 @@ namespace MOM.Controllers
 {
     public class MeetingsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
+        private readonly string _connectionString;
 
-        public MeetingsController(ApplicationDbContext context)
+        public MeetingsController(IConfiguration configuration)
         {
-            _context = context;
+            _configuration = configuration;
+            _connectionString = _configuration.GetConnectionString("MOMConnection") ?? throw new InvalidOperationException("Connection string 'MOMConnection' not found.");
         }
 
         public async Task<IActionResult> Index(
@@ -35,20 +35,40 @@ namespace MOM.Controllers
             ViewBag.CurrentEndDate = EndDate?.ToString("yyyy-MM-dd");
             ViewBag.CurrentSearchText = SearchText;
 
-            // Execute search stored procedure via EF Core
-            var parameters = new[]
-            {
-                new SqlParameter("@MeetingTypeID", (object?)MeetingTypeID ?? DBNull.Value),
-                new SqlParameter("@DepartmentID", (object?)DepartmentID ?? DBNull.Value),
-                new SqlParameter("@MeetingVenueID", (object?)MeetingVenueID ?? DBNull.Value),
-                new SqlParameter("@StartDate", (object?)StartDate ?? DBNull.Value),
-                new SqlParameter("@EndDate", (object?)EndDate ?? DBNull.Value),
-                new SqlParameter("@SearchText", (object?)SearchText ?? DBNull.Value)
-            };
+            var meetings = new List<MeetingListVM>();
 
-            var meetings = await _context.Set<MeetingListVM>()
-                .FromSqlRaw("EXEC PR_MOM_Search_Meetings @MeetingTypeID, @DepartmentID, @MeetingVenueID, @StartDate, @EndDate, @SearchText", parameters)
-                .ToListAsync();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                
+                using (var command = new SqlCommand("PR_MOM_Search_Meetings", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@MeetingTypeID", (object?)MeetingTypeID ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@DepartmentID", (object?)DepartmentID ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@MeetingVenueID", (object?)MeetingVenueID ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@StartDate", (object?)StartDate ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@EndDate", (object?)EndDate ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@SearchText", (object?)SearchText ?? DBNull.Value);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            meetings.Add(new MeetingListVM
+                            {
+                                MeetingID = reader.GetInt32(reader.GetOrdinal("MeetingID")),
+                                MeetingDate = reader.IsDBNull(reader.GetOrdinal("MeetingDate")) ? null : reader.GetDateTime(reader.GetOrdinal("MeetingDate")),
+                                MeetingVenueName = reader.IsDBNull(reader.GetOrdinal("MeetingVenueName")) ? null : reader.GetString(reader.GetOrdinal("MeetingVenueName")),
+                                MeetingTypeName = reader.IsDBNull(reader.GetOrdinal("MeetingTypeName")) ? null : reader.GetString(reader.GetOrdinal("MeetingTypeName")),
+                                DepartmentName = reader.IsDBNull(reader.GetOrdinal("DepartmentName")) ? null : reader.GetString(reader.GetOrdinal("DepartmentName")),
+                                MeetingDescription = reader.IsDBNull(reader.GetOrdinal("MeetingDescription")) ? null : reader.GetString(reader.GetOrdinal("MeetingDescription")),
+                                IsCancelled = reader.IsDBNull(reader.GetOrdinal("IsCancelled")) ? null : reader.GetBoolean(reader.GetOrdinal("IsCancelled"))
+                            });
+                        }
+                    }
+                }
+            }
 
             // Pagination logic
             int pageSize = 10;
@@ -74,7 +94,7 @@ namespace MOM.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> Create(MeetingsModel model)
         {
             if (!ModelState.IsValid)
@@ -83,84 +103,237 @@ namespace MOM.Controllers
                 return View("MeetingAddEdit", model);
             }
 
-            var parameters = new[]
+            using (var connection = new SqlConnection(_connectionString))
             {
-                new SqlParameter("@MeetingDate", (object?)model.MeetingDate ?? DBNull.Value),
-                new SqlParameter("@MeetingVenueID", (object?)model.MeetingVenueID ?? DBNull.Value),
-                new SqlParameter("@MeetingTypeID", (object?)model.MeetingTypeID ?? DBNull.Value),
-                new SqlParameter("@DepartmentID", (object?)model.DepartmentID ?? DBNull.Value),
-                new SqlParameter("@MeetingDescription", (object?)model.MeetingDescription ?? DBNull.Value),
-                new SqlParameter("@DocumentPath", (object?)model.DocumentPath ?? DBNull.Value),
-                new SqlParameter("@IsCancelled", false),
-                new SqlParameter("@CancellationDateTime", DBNull.Value),
-                new SqlParameter("@CancellationReason", DBNull.Value)
-            };
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("PR_MOM_Meetings_Insert", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@MeetingDate", (object?)model.MeetingDate ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@MeetingVenueID", (object?)model.MeetingVenueID ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@MeetingTypeID", (object?)model.MeetingTypeID ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@DepartmentID", (object?)model.DepartmentID ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@MeetingDescription", (object?)model.MeetingDescription ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@DocumentPath", (object?)model.DocumentPath ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@IsCancelled", false);
+                    command.Parameters.AddWithValue("@CancellationDateTime", DBNull.Value);
+                    command.Parameters.AddWithValue("@CancellationReason", DBNull.Value);
 
-            await _context.Database.ExecuteSqlRawAsync(
-                "EXEC PR_MOM_Meetings_Insert @MeetingDate, @MeetingVenueID, @MeetingTypeID, @DepartmentID, @MeetingDescription, @DocumentPath, @IsCancelled, @CancellationDateTime, @CancellationReason",
-                parameters
-            );
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+            
             return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Details(int id)
         {
-            var meeting = await _context.Meetings
-                .Include(m => m.MeetingType)
-                .Include(m => m.Department)
-                .Include(m => m.MeetingVenue)
-                .Include(m => m.MeetingMembers!)
-                    .ThenInclude(mm => mm.Staff)
-                        .ThenInclude(s => s!.Department)
-                .FirstOrDefaultAsync(m => m.MeetingID == id);
+            MeetingsModel? meeting = null;
 
-            if (meeting == null) return NotFound();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
 
-            // Fetch staff members not already in this meeting for the "Add Member" dropdown
-            var currentMemberIds = meeting.MeetingMembers?.Select(mm => mm.StaffID).ToList() ?? new List<int?>();
-            ViewBag.StaffList = await _context.Staff
-                .Include(s => s.Department)
-                .Where(s => !currentMemberIds.Contains(s.StaffID))
-                .ToListAsync();
+                // 1. Fetch meeting and related lookup tables
+                string meetingQuery = @"
+                    SELECT m.*, 
+                           mt.MeetingTypeName, 
+                           d.DepartmentName, 
+                           mv.MeetingVenueName
+                    FROM MOM_Meetings m
+                    LEFT JOIN MOM_MeetingType mt ON m.MeetingTypeID = mt.MeetingTypeID
+                    LEFT JOIN MOM_Department d ON m.DepartmentID = d.DepartmentID
+                    LEFT JOIN MOM_MeetingVenue mv ON m.MeetingVenueID = mv.MeetingVenueID
+                    WHERE m.MeetingID = @MeetingID";
+
+                using (var command = new SqlCommand(meetingQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@MeetingID", id);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            meeting = new MeetingsModel
+                            {
+                                MeetingID = reader.GetInt32(reader.GetOrdinal("MeetingID")),
+                                MeetingDate = reader.IsDBNull(reader.GetOrdinal("MeetingDate")) ? null : reader.GetDateTime(reader.GetOrdinal("MeetingDate")),
+                                MeetingVenueID = reader.IsDBNull(reader.GetOrdinal("MeetingVenueID")) ? null : reader.GetInt32(reader.GetOrdinal("MeetingVenueID")),
+                                MeetingTypeID = reader.IsDBNull(reader.GetOrdinal("MeetingTypeID")) ? null : reader.GetInt32(reader.GetOrdinal("MeetingTypeID")),
+                                DepartmentID = reader.IsDBNull(reader.GetOrdinal("DepartmentID")) ? null : reader.GetInt32(reader.GetOrdinal("DepartmentID")),
+                                MeetingDescription = reader.IsDBNull(reader.GetOrdinal("MeetingDescription")) ? null : reader.GetString(reader.GetOrdinal("MeetingDescription")),
+                                DocumentPath = reader.IsDBNull(reader.GetOrdinal("DocumentPath")) ? null : reader.GetString(reader.GetOrdinal("DocumentPath")),
+                                IsCancelled = reader.IsDBNull(reader.GetOrdinal("IsCancelled")) ? null : reader.GetBoolean(reader.GetOrdinal("IsCancelled")),
+                                CancellationDateTime = reader.IsDBNull(reader.GetOrdinal("CancellationDateTime")) ? null : reader.GetDateTime(reader.GetOrdinal("CancellationDateTime")),
+                                CancellationReason = reader.IsDBNull(reader.GetOrdinal("CancellationReason")) ? null : reader.GetString(reader.GetOrdinal("CancellationReason")),
+                                MeetingType = reader.IsDBNull(reader.GetOrdinal("MeetingTypeID")) ? null : new MeetingTypeModel 
+                                {
+                                    MeetingTypeID = reader.GetInt32(reader.GetOrdinal("MeetingTypeID")),
+                                    MeetingTypeName = reader.IsDBNull(reader.GetOrdinal("MeetingTypeName")) ? null : reader.GetString(reader.GetOrdinal("MeetingTypeName"))
+                                },
+                                Department = reader.IsDBNull(reader.GetOrdinal("DepartmentID")) ? null : new DepartmentModel
+                                {
+                                    DepartmentID = reader.GetInt32(reader.GetOrdinal("DepartmentID")),
+                                    DepartmentName = reader.IsDBNull(reader.GetOrdinal("DepartmentName")) ? null : reader.GetString(reader.GetOrdinal("DepartmentName"))
+                                },
+                                MeetingVenue = reader.IsDBNull(reader.GetOrdinal("MeetingVenueID")) ? null : new MeetingVenueModel
+                                {
+                                    MeetingVenueID = reader.GetInt32(reader.GetOrdinal("MeetingVenueID")),
+                                    MeetingVenueName = reader.IsDBNull(reader.GetOrdinal("MeetingVenueName")) ? null : reader.GetString(reader.GetOrdinal("MeetingVenueName"))
+                                }
+                            };
+                        }
+                    }
+                }
+
+                if (meeting == null) return NotFound();
+
+                // 2. Fetch MeetingMembers with Staff and Department
+                meeting.MeetingMembers = new List<MeetingMemberModel>();
+                var currentMemberIds = new List<int?>();
+
+                string membersQuery = @"
+                    SELECT mm.*, s.StaffName, d.DepartmentID, d.DepartmentName
+                    FROM MOM_MeetingMember mm
+                    INNER JOIN MOM_Staff s ON mm.StaffID = s.StaffID
+                    LEFT JOIN MOM_Department d ON s.DepartmentID = d.DepartmentID
+                    WHERE mm.MeetingID = @MeetingID";
+                    
+                using (var command = new SqlCommand(membersQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@MeetingID", id);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            int? staffId = reader.IsDBNull(reader.GetOrdinal("StaffID")) ? null : reader.GetInt32(reader.GetOrdinal("StaffID"));
+                            currentMemberIds.Add(staffId);
+
+                            meeting.MeetingMembers.Add(new MeetingMemberModel
+                            {
+                                MeetingMemberID = reader.GetInt32(reader.GetOrdinal("MeetingMemberID")),
+                                MeetingID = reader.IsDBNull(reader.GetOrdinal("MeetingID")) ? null : reader.GetInt32(reader.GetOrdinal("MeetingID")),
+                                StaffID = staffId,
+                                IsPresent = reader.GetBoolean(reader.GetOrdinal("IsPresent")),
+                                Remarks = reader.IsDBNull(reader.GetOrdinal("Remarks")) ? null : reader.GetString(reader.GetOrdinal("Remarks")),
+                                Staff = new StaffModel
+                                {
+                                    StaffID = reader.GetInt32(reader.GetOrdinal("StaffID")),
+                                    StaffName = reader.GetString(reader.GetOrdinal("StaffName")),
+                                    Department = reader.IsDBNull(reader.GetOrdinal("DepartmentID")) ? null : new DepartmentModel
+                                    {
+                                        DepartmentID = reader.GetInt32(reader.GetOrdinal("DepartmentID")),
+                                        DepartmentName = reader.GetString(reader.GetOrdinal("DepartmentName"))
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+
+                // 3. Fetch StaffList for Dropdown (excluding existing members)
+                var staffList = new List<StaffModel>();
+                string staffQuery = "SELECT s.*, d.DepartmentName FROM MOM_Staff s LEFT JOIN MOM_Department d ON s.DepartmentID = d.DepartmentID";
+                
+                using (var command = new SqlCommand(staffQuery, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            int currentStaffId = reader.GetInt32(reader.GetOrdinal("StaffID"));
+                            if (!currentMemberIds.Contains(currentStaffId))
+                            {
+                                staffList.Add(new StaffModel
+                                {
+                                    StaffID = currentStaffId,
+                                    StaffName = reader.GetString(reader.GetOrdinal("StaffName")),
+                                    Department = reader.IsDBNull(reader.GetOrdinal("DepartmentID")) ? null : new DepartmentModel
+                                    {
+                                        DepartmentID = reader.GetInt32(reader.GetOrdinal("DepartmentID")),
+                                        DepartmentName = reader.GetString(reader.GetOrdinal("DepartmentName"))
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+                ViewBag.StaffList = staffList;
+            }
 
             return View(meeting);
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> AddMember(int meetingId, int staffId)
         {
-            var parameters = new[]
+            using (var connection = new SqlConnection(_connectionString))
             {
-                new SqlParameter("@MeetingID", meetingId),
-                new SqlParameter("@StaffID", staffId),
-                new SqlParameter("@IsPresent", false),
-                new SqlParameter("@Remarks", "")
-            };
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("PR_MOM_MeetingMember_Insert", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@MeetingID", meetingId);
+                    command.Parameters.AddWithValue("@StaffID", staffId);
+                    command.Parameters.AddWithValue("@IsPresent", false);
+                    command.Parameters.AddWithValue("@Remarks", "");
 
-            await _context.Database.ExecuteSqlRawAsync(
-                "EXEC PR_MOM_MeetingMember_Insert @MeetingID, @StaffID, @IsPresent, @Remarks",
-                parameters
-            );
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+
             return RedirectToAction(nameof(Details), new { id = meetingId });
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> RemoveMember(int meetingMemberId, int meetingId)
         {
-            var member = await _context.MeetingMembers.FindAsync(meetingMemberId);
-            if (member != null)
+            using (var connection = new SqlConnection(_connectionString))
             {
-                _context.MeetingMembers.Remove(member);
-                await _context.SaveChangesAsync();
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("DELETE FROM MOM_MeetingMember WHERE MeetingMemberID = @MeetingMemberID", connection))
+                {
+                    command.Parameters.AddWithValue("@MeetingMemberID", meetingMemberId);
+                    await command.ExecuteNonQueryAsync();
+                }
             }
+
             return RedirectToAction(nameof(Details), new { id = meetingId });
         }
 
         public async Task<IActionResult> Update(int id)
         {
-            var meeting = await _context.Meetings.FindAsync(id);
+            MeetingsModel? meeting = null;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("SELECT * FROM MOM_Meetings WHERE MeetingID = @MeetingID", connection))
+                {
+                    command.Parameters.AddWithValue("@MeetingID", id);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            meeting = new MeetingsModel
+                            {
+                                MeetingID = reader.GetInt32(reader.GetOrdinal("MeetingID")),
+                                MeetingDate = reader.IsDBNull(reader.GetOrdinal("MeetingDate")) ? null : reader.GetDateTime(reader.GetOrdinal("MeetingDate")),
+                                MeetingVenueID = reader.IsDBNull(reader.GetOrdinal("MeetingVenueID")) ? null : reader.GetInt32(reader.GetOrdinal("MeetingVenueID")),
+                                MeetingTypeID = reader.IsDBNull(reader.GetOrdinal("MeetingTypeID")) ? null : reader.GetInt32(reader.GetOrdinal("MeetingTypeID")),
+                                DepartmentID = reader.IsDBNull(reader.GetOrdinal("DepartmentID")) ? null : reader.GetInt32(reader.GetOrdinal("DepartmentID")),
+                                MeetingDescription = reader.IsDBNull(reader.GetOrdinal("MeetingDescription")) ? null : reader.GetString(reader.GetOrdinal("MeetingDescription")),
+                                DocumentPath = reader.IsDBNull(reader.GetOrdinal("DocumentPath")) ? null : reader.GetString(reader.GetOrdinal("DocumentPath")),
+                                IsCancelled = reader.IsDBNull(reader.GetOrdinal("IsCancelled")) ? null : reader.GetBoolean(reader.GetOrdinal("IsCancelled")),
+                                CancellationDateTime = reader.IsDBNull(reader.GetOrdinal("CancellationDateTime")) ? null : reader.GetDateTime(reader.GetOrdinal("CancellationDateTime")),
+                                CancellationReason = reader.IsDBNull(reader.GetOrdinal("CancellationReason")) ? null : reader.GetString(reader.GetOrdinal("CancellationReason"))
+                            };
+                        }
+                    }
+                }
+            }
+
             if (meeting == null) return NotFound();
 
             await LoadDropdowns();
@@ -168,7 +341,7 @@ namespace MOM.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> Update(MeetingsModel model)
         {
             if (!ModelState.IsValid)
@@ -177,57 +350,69 @@ namespace MOM.Controllers
                 return View("MeetingAddEdit", model);
             }
 
-            var parameters = new[]
+            using (var connection = new SqlConnection(_connectionString))
             {
-                new SqlParameter("@MeetingID", model.MeetingID),
-                new SqlParameter("@MeetingDate", (object?)model.MeetingDate ?? DBNull.Value),
-                new SqlParameter("@MeetingVenueID", (object?)model.MeetingVenueID ?? DBNull.Value),
-                new SqlParameter("@MeetingTypeID", (object?)model.MeetingTypeID ?? DBNull.Value),
-                new SqlParameter("@DepartmentID", (object?)model.DepartmentID ?? DBNull.Value),
-                new SqlParameter("@MeetingDescription", (object?)model.MeetingDescription ?? DBNull.Value),
-                new SqlParameter("@DocumentPath", (object?)model.DocumentPath ?? DBNull.Value),
-                new SqlParameter("@IsCancelled", (object?)model.IsCancelled ?? DBNull.Value),
-                new SqlParameter("@CancellationDateTime", (object?)model.CancellationDateTime ?? DBNull.Value),
-                new SqlParameter("@CancellationReason", (object?)model.CancellationReason ?? DBNull.Value)
-            };
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("PR_MOM_Meetings_UpdateByPK", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@MeetingID", model.MeetingID);
+                    command.Parameters.AddWithValue("@MeetingDate", (object?)model.MeetingDate ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@MeetingVenueID", (object?)model.MeetingVenueID ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@MeetingTypeID", (object?)model.MeetingTypeID ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@DepartmentID", (object?)model.DepartmentID ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@MeetingDescription", (object?)model.MeetingDescription ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@DocumentPath", (object?)model.DocumentPath ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@IsCancelled", (object?)model.IsCancelled ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@CancellationDateTime", (object?)model.CancellationDateTime ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@CancellationReason", (object?)model.CancellationReason ?? DBNull.Value);
 
-            await _context.Database.ExecuteSqlRawAsync(
-                "EXEC PR_MOM_Meetings_UpdateByPK @MeetingID, @MeetingDate, @MeetingVenueID, @MeetingTypeID, @DepartmentID, @MeetingDescription, @DocumentPath, @IsCancelled, @CancellationDateTime, @CancellationReason",
-                parameters
-            );
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> UpdateAttendance(List<MeetingMemberModel> members, int meetingId)
         {
             if (members != null && members.Any())
             {
-                foreach (var member in members)
+                using (var connection = new SqlConnection(_connectionString))
                 {
-                    var existingMember = await _context.MeetingMembers.FindAsync(member.MeetingMemberID);
-                    if (existingMember != null)
+                    await connection.OpenAsync();
+                    foreach (var member in members)
                     {
-                        existingMember.IsPresent = member.IsPresent;
-                        existingMember.Modified = DateTime.Now;
-                        _context.Entry(existingMember).Property(x => x.IsPresent).IsModified = true;
-                        _context.Entry(existingMember).Property(x => x.Modified).IsModified = true;
+                        using (var command = new SqlCommand("UPDATE MeetingMembers SET IsPresent = @IsPresent, Modified = GETDATE() WHERE MeetingMemberID = @MeetingMemberID", connection))
+                        {
+                            command.Parameters.AddWithValue("@IsPresent", member.IsPresent);
+                            command.Parameters.AddWithValue("@MeetingMemberID", member.MeetingMemberID);
+                            await command.ExecuteNonQueryAsync();
+                        }
                     }
                 }
-                await _context.SaveChangesAsync();
             }
             return RedirectToAction(nameof(Details), new { id = meetingId });
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+ 
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
-                var parameter = new SqlParameter("@MeetingID", id);
-                await _context.Database.ExecuteSqlRawAsync("EXEC PR_MOM_Meetings_DeleteByPK @MeetingID", parameter);
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
+                    using (var command = new SqlCommand("PR_MOM_Meetings_DeleteByPK", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@MeetingID", id);
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
                 TempData["Success"] = "Meeting deleted successfully.";
             }
             catch (Exception)
@@ -239,9 +424,69 @@ namespace MOM.Controllers
 
         private async Task LoadDropdowns()
         {
-            ViewBag.MeetingTypeList = await _context.MeetingTypes.FromSqlRaw("EXEC PR_MOM_MeetingType_SelectAll").ToListAsync();
-            ViewBag.MeetingVenueList = await _context.MeetingVenues.FromSqlRaw("EXEC PR_MOM_MeetingVenue_SelectAll").ToListAsync();
-            ViewBag.DepartmentList = await _context.Departments.FromSqlRaw("EXEC PR_MOM_Department_SelectAll").ToListAsync();
+            var meetingTypes = new List<MeetingTypeModel>();
+            var meetingVenues = new List<MeetingVenueModel>();
+            var departments = new List<DepartmentModel>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                // Types
+                using (var command = new SqlCommand("PR_MOM_MeetingType_SelectAll", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            meetingTypes.Add(new MeetingTypeModel
+                            {
+                                MeetingTypeID = reader.GetInt32(reader.GetOrdinal("MeetingTypeID")),
+                                MeetingTypeName = reader.GetString(reader.GetOrdinal("MeetingTypeName"))
+                            });
+                        }
+                    }
+                }
+
+                // Venues
+                using (var command = new SqlCommand("PR_MOM_MeetingVenue_SelectAll", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            meetingVenues.Add(new MeetingVenueModel
+                            {
+                                MeetingVenueID = reader.GetInt32(reader.GetOrdinal("MeetingVenueID")),
+                                MeetingVenueName = reader.GetString(reader.GetOrdinal("MeetingVenueName"))
+                            });
+                        }
+                    }
+                }
+
+                // Departments
+                using (var command = new SqlCommand("PR_MOM_Department_SelectAll", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            departments.Add(new DepartmentModel
+                            {
+                                DepartmentID = reader.GetInt32(reader.GetOrdinal("DepartmentID")),
+                                DepartmentName = reader.GetString(reader.GetOrdinal("DepartmentName"))
+                            });
+                        }
+                    }
+                }
+            }
+
+            ViewBag.MeetingTypeList = meetingTypes;
+            ViewBag.MeetingVenueList = meetingVenues;
+            ViewBag.DepartmentList = departments;
         }
     }
 }
